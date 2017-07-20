@@ -22,46 +22,6 @@
     waveDots: 'loading-wave-dots',
   };
 
-  /**
-   * get the first scroll parent of an element
-   * @param  {DOM} elm    the element which find scorll parent
-   * @return {DOM}        the first scroll parent
-   */
-  function getScrollParent(elm) {
-    if (elm.tagName === 'BODY') {
-      return window;
-    } else if (['scroll', 'auto'].indexOf(getComputedStyle(elm).overflowY) > -1) {
-      return elm;
-    } else if (elm.hasAttribute('infinite-wrapper') || elm.hasAttribute('data-infinite-wrapper')) {
-      return elm;
-    }
-    return getScrollParent(elm.parentNode);
-  }
-
-  /**
-   * get current distance from bottom
-   * @param  {DOM}    scrollElm     scroll element
-   * @param  {DOM}    infiniteElm   infinite element
-   * @param  {String} dir           calculate direction
-   * @return {Number}     distance
-   */
-  function getCurrentDistance(scrollElm, infiniteElm, dir) {
-    let distance;
-
-    if (dir === 'top') {
-      distance = isNaN(scrollElm.scrollTop) ? scrollElm.pageYOffset : scrollElm.scrollTop;
-    } else {
-      const infiniteElmOffsetTopFromBottom = infiniteElm.getBoundingClientRect().top;
-      const scrollElmOffsetTopFromBottom = scrollElm === window ?
-                                           window.innerHeight :
-                                           scrollElm.getBoundingClientRect().bottom;
-
-      distance = infiniteElmOffsetTopFromBottom - scrollElmOffsetTopFromBottom;
-    }
-
-    return distance;
-  }
-
   export default {
     data() {
       return {
@@ -90,7 +50,7 @@
       },
     },
     mounted() {
-      this.scrollParent = getScrollParent(this.$el);
+      this.scrollParent = this.getScrollParent(this.$el);
 
       this.scrollHandler = function scrollHandlerOriginal() {
         if (!this.isLoading) {
@@ -132,13 +92,51 @@
     },
     methods: {
       attemptLoad() {
-        const currentDistance = getCurrentDistance(this.scrollParent, this.$el, this.direction);
+        const currentDistance = this.getCurrentDistance(this.scrollParent, this.$el, this.direction);
         if (!this.isComplete && currentDistance <= this.distance) {
           this.isLoading = true;
           this.onInfinite.call();
         } else {
           this.isLoading = false;
         }
+      },
+      /**
+       * get the first scroll parent of an element
+       * @param  {DOM} elm    the element which find scorll parent
+       * @return {DOM}        the first scroll parent
+       */
+      getScrollParent(elm) {
+        if (elm.tagName === 'BODY') {
+          return window;
+        } else if (['scroll', 'auto'].indexOf(getComputedStyle(elm).overflowY) > -1) {
+          return elm;
+        } else if (
+          elm.hasAttribute('infinite-wrapper') ||
+          elm.hasAttribute('data-infinite-wrapper')
+        ) {
+          return elm;
+        }
+        return this.getScrollParent(elm.parentNode);
+      },
+      /**
+       * get current distance from bottom
+       * @param  {DOM}    scrollElm     scroll element
+       * @param  {DOM}    infiniteElm   infinite element
+       * @param  {String} dir           calculate direction
+       * @return {Number}     distance
+       */
+      getCurrentDistance(scrollElm, infiniteElm, dir) {
+        let distance;
+        if (dir === 'top') {
+          distance = isNaN(scrollElm.scrollTop) ? scrollElm.pageYOffset : scrollElm.scrollTop;
+        } else {
+          const infiniteElmOffsetTopFromBottom = infiniteElm.getBoundingClientRect().top;
+          const scrollElmOffsetTopFromBottom = scrollElm === window ?
+            window.innerHeight :
+            scrollElm.getBoundingClientRect().bottom;
+          distance = infiniteElmOffsetTopFromBottom - scrollElmOffsetTopFromBottom;
+        }
+        return distance;
       },
     },
     destroyed() {
